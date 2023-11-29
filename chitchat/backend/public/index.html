@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WebSocket Chat</title>
+    <style>
+        #messageDisplay {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .user-message {
+            align-self: flex-end;
+            background-color: #c2f0c2;
+            padding: 8px;
+            border-radius: 8px;
+            max-width: 70%;
+        }
+
+        .other-message {
+            align-self: flex-start;
+            background-color: #e0e0e0;
+            padding: 8px;
+            border-radius: 8px;
+            max-width: 70%;
+        }
+    </style>
+</head>
+<body>
+
+<h1>WebSocket Chat</h1>
+
+<label for="usernameInput">Username:</label>
+<input type="text" id="usernameInput" placeholder="Enter your username">
+<button onclick="connectWebSocket()">Connect</button>
+
+<label for="messageInput">Message:</label>
+<input type="text" id="messageInput" placeholder="Type your message" disabled>
+<button onclick="sendMessage()" disabled>Send</button>
+
+<div id="messageDisplay"></div>
+
+<script>
+    let username = "";
+    let socket;
+
+    // Function to connect to WebSocket
+    function connectWebSocket() {
+        const usernameInput = document.getElementById('usernameInput');
+        username = usernameInput.value.trim();
+
+        if (username !== '') {
+            // Disable username input and connect button
+            usernameInput.disabled = true;
+            document.getElementById('messageInput').disabled = false;
+            document.querySelector('button[onclick="connectWebSocket()"]').disabled = true;
+            document.querySelector('button[onclick="sendMessage()"]').disabled = false;
+
+            // Establish WebSocket connection
+            const websocketUrl = `ws://localhost:8080/ws?username=${username}`;
+            socket = new WebSocket(websocketUrl);
+
+            // Connection opened
+            socket.addEventListener('open', (event) => {
+                console.log('WebSocket connection opened:', event);
+            });
+
+            // Listen for messages
+            socket.addEventListener('message', (event) => {
+                console.log(event.data);
+                const messageDisplay = document.getElementById('messageDisplay');
+                const messageDiv = document.createElement('div');
+                messageDiv.textContent = `${event.data}`;
+                messageDiv.classList.add('other-message');
+                messageDisplay.appendChild(messageDiv);
+            });
+
+            // Listen for any errors that occur.
+            socket.addEventListener('error', (event) => {
+                console.error('WebSocket error:', event);
+            });
+
+            // Connection closed
+            socket.addEventListener('close', (event) => {
+                console.log('WebSocket connection closed:', event);
+            });
+        }
+    }
+
+    window.addEventListener('beforeunload', () => {
+        if (socket && socket.readyState === WebSocket.OPEN) {
+            socket.close();
+        }
+    });
+
+    // Function to send a message
+    function sendMessage() {
+        const messageInput = document.getElementById('messageInput');
+        const message = messageInput.value;
+
+        if (message.trim() !== '') {
+            socket.send(`${message}`);
+            messageInput.value = '';
+            const messageDisplay = document.getElementById('messageDisplay');
+            const messageDiv = document.createElement('div');
+            messageDiv.textContent = `${message}`;
+            messageDiv.classList.add('user-message');
+            messageDisplay.appendChild(messageDiv);
+        }
+    }
+</script>
+
+</body>
+</html>
