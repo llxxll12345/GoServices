@@ -1,7 +1,3 @@
-"""
-	This file simulates a player matcing endpoint where a 
-	player requests match with another online player.
-"""
 package main
 
 import (
@@ -10,7 +6,7 @@ import (
 )
 
 var (
-	matches     = sync.Map{}  // Map from player id to a channel, the picker sends the result through the channel.
+	matches     = sync.Map{} // Map from player id to a channel, the picker sends the result through the channel.
 	mu          = sync.Mutex{}
 	matchResult = make(map[string]string)
 	queue       = make(chan string, 10)
