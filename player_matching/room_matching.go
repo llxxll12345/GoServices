@@ -101,10 +101,11 @@ func (game *Game) JoinGame(userID int) bool {
 
 	Pop from the queue if the head becomes full. Enque if a full room becomes empty.
 
-	Init queue with all rooms.
+	Init queue with all rooms.*/
 
-	So if there are a limited number of rooms, maybe linear search is better.*/
-	/*for _, room := range game.Rooms {
+	/* Linear scanning:
+
+	for _, room := range game.Rooms {
 		if room.AddUser(user) {
 			return true
 		}
