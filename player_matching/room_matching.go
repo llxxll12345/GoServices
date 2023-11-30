@@ -26,6 +26,8 @@ type Game struct {
 	Rooms map[int]*Room
 	Users map[int]*User
 	mutex sync.Mutex
+
+	availableRooms []*Room
 }
 
 var (
@@ -60,15 +62,16 @@ func (room *Room) AddUser(user *User) bool {
 }
 
 // LeaveRoom removes a user from the specified room.
-func (room *Room) LeaveRoom(user *User) {
+func (room *Room) LeaveRoom(user *User) bool {
 	room.mutex.Lock()
 	defer room.mutex.Unlock()
-
-	if room.CurrentUsers > 0 {
-		room.CurrentUsers--
-		user.RoomID = -1
-		fmt.Printf("User %d left Room %d\n", user.ID, room.ID)
+	if room.CurrentUsers == 0 {
+		return false
 	}
+	room.CurrentUsers--
+	user.RoomID = -1
+	fmt.Printf("User %d left Room %d\n", user.ID, room.ID)
+	return true
 }
 
 // NewGame creates a new room matching system.
@@ -82,6 +85,7 @@ func NewGame() *Game {
 // AddRoom adds a new room to the system.
 func (game *Game) AddRoom(roomID, capacity int) {
 	game.Rooms[roomID] = NewRoom(roomID, capacity)
+	game.availableRooms = append(game.availableRooms, game.Rooms[roomID])
 }
 
 // JoinGame adds a user to the system and attempts to find an available room.
@@ -91,13 +95,29 @@ func (game *Game) JoinGame(userID int) bool {
 
 	user := &User{ID: userID, RoomID: -1}
 	game.Users[userID] = user
-	for _, room := range game.Rooms {
+	/*Assume that we can assign the user to any open room
+	with open spots, a possible optimization is keep a
+	queue of rooms with empty spots and always assign user to the head.
+
+	Pop from the queue if the head becomes full. Enque if a full room becomes empty.
+
+	Init queue with all rooms.
+
+	So if there are a limited number of rooms, maybe linear search is better.*/
+	/*for _, room := range game.Rooms {
 		if room.AddUser(user) {
 			return true
 		}
+	}*/
+	if len(game.availableRooms) == 0 {
+		return false
 	}
-
-	return false
+	headRoom := game.availableRooms[0]
+	game.availableRooms[0].AddUser(user)
+	if headRoom.Capacity == headRoom.CurrentUsers {
+		game.availableRooms = game.availableRooms[1:]
+	}
+	return true
 }
 
 // LeaveGame removes a user from the system and the associated room.
@@ -113,6 +133,9 @@ func (game *Game) LeaveGame(userID int) bool {
 		if roomID != -1 {
 			room := game.Rooms[roomID]
 			room.LeaveRoom(user)
+			if room.CurrentUsers == 0 {
+				game.availableRooms = append(game.availableRooms, room)
+			}
 		}
 		return true
 	}
