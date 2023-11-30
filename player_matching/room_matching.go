@@ -134,6 +134,8 @@ func (game *Game) LeaveGame(userID int) bool {
 		if roomID != -1 {
 			room := game.Rooms[roomID]
 			room.LeaveRoom(user)
+
+			// Update the queue if a full room becomes empty
 			if room.CurrentUsers == 0 {
 				game.availableRooms = append(game.availableRooms, room)
 			}
